@@ -39,7 +39,7 @@ namespace ExampleFactura
             var miFactura = LoadFactura(idFactura);
             miFactura.Emitida = true;
             miFactura.FechaEmision = DateTime.Now;
-            if (SaveFactura(miFactura) > 0)
+            if (SaveExistentFactura(miFactura) > 0)
             {
                 logger.Info("Salvado de Factura Emitida " + idFactura);
                 return miFactura;
@@ -54,7 +54,8 @@ namespace ExampleFactura
         private Factura LoadFactura(int factura)
         {
             string FacturasConnection = ConfigurationManager.ConnectionStrings["FacturasCS"].ConnectionString;
-            SqlDataAdapter custAdapter = new SqlDataAdapter("SELECT * FROM dbo.Facturas Where idFactura=" + factura + "", FacturasConnection);
+            SqlDataAdapter custAdapter = new SqlDataAdapter("SELECT * FROM dbo.Facturas Where idFactura=@factura", FacturasConnection);
+            custAdapter.SelectCommand.Parameters.AddWithValue("@factura", factura);
             DataSet Facturas = new DataSet();
             custAdapter.Fill(Facturas, "Facturas");
             Factura miFactura = null;
@@ -69,11 +70,16 @@ namespace ExampleFactura
             return miFactura;
         }
 
-        private int SaveFactura(Factura factura2Save)
+        private int SaveExistentFactura(Factura factura2Save)
         {
-            ///Codigo que se conecta a la Base de datos por adonet, por poner un ejemplo, en el peor de los casos será una stored
             string FacturasConnection = ConfigurationManager.ConnectionStrings["FacturasCS"].ConnectionString;
-
+            SqlConnection cnn = new SqlConnection(FacturasConnection);
+            SqlCommand dbCommand = new SqlCommand("Update dbo.Facturas set Emitida=@Emitida, FechaEmision=@FechaEmision where idFactura=@id", cnn);
+            dbCommand.Parameters.AddWithValue("@Emitida", factura2Save.Emitida);
+            dbCommand.Parameters.AddWithValue("@FechaEmision", factura2Save.FechaEmision);
+            dbCommand.Parameters.AddWithValue("@id", factura2Save.Id);
+            int count = dbCommand.ExecuteNonQuery();
+            return count;
         }
     }
 }
